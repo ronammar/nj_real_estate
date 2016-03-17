@@ -1,0 +1,97 @@
+---
+output: html_document
+---
+```{r global_options, include=FALSE}
+# use include=FALSE to have the chunk evaluated, but neither the code nor its output displayed.
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, fig.align="center",
+                      fig.width=12, fig.height=8, fig.path='Figs/',
+                      dev=c('pdf', 'png'))  # output figures as both pdf and png
+
+# Example with more options:
+#knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE)
+```
+
+```{r}
+# Clear the current session, to avoid errors from persisting data structures
+rm(list=ls())
+
+# Free up memory by forcing garbage collection
+invisible(gc())
+
+# Pretty printing in knitr
+library(printr)
+
+# Manually set the seed to an arbitrary number for consistency in reports
+set.seed(654631)
+
+# Do not convert character vectors to factors unless explicitly indicated
+options(stringsAsFactors=FALSE)
+
+startTime <- Sys.time()
+
+company <- "Bristol-Myers Squibb Co."
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(randomcoloR)
+library(stringr)
+library(tidyr)
+
+# CONSTANTS
+COUNTIES <- c("Mercer", "Middlesex", "Somerset")
+CUTOFF_DATE <- as.Date("2012-01-01")
+```
+
+```{r, get_zillow_csv, cache=TRUE}
+homes <- read.csv("http://files.zillowstatic.com/research/public/City/City_Zhvi_4bedroom.csv",
+                  check.names=FALSE)
+
+homes <- homes %>%
+  filter(State == "NJ" & CountyName %in% COUNTIES) %>%
+  gather(yyyymm, zhvi_index, -(1:7)) %>%
+  mutate(date=as.Date(paste(yyyymm, "-01", sep=""))) %>%
+  select(-yyyymm)
+```
+
+## Short 4-bed home price analysis from `r CUTOFF_DATE` to today
+
+Data come from [Zillow ZHVI datasets](http://www.zillow.com/research/data/). Specifically, I'm looking at [4-bedroom homes](http://files.zillowstatic.com/research/public/City/City_Zhvi_4bedroom.csv)
+
+Data from `r min(homes$date)` to `r max(homes$date)`
+```{r, fig.width=18, fig.height=12}
+palette <- unname(distinctColorPalette(length(unique(homes$RegionName))))
+
+ggplot(homes, aes(x=date, y=zhvi_index, col=RegionName, pch=CountyName)) +
+  scale_color_manual(values=palette) +
+  scale_shape_manual(values=c(0, 1, 2)) +
+  geom_point(size=2) +
+  labs(title="Zillow Home Value Index (ZHVI) for 4-bedroom homes") +
+  theme_bw()
+```
+
+Data from `r CUTOFF_DATE` to `r max(homes$date)`
+```{r}
+recentSales <- filter(homes, date > CUTOFF_DATE)
+
+ggplot(recentSales, aes(x=date, y=zhvi_index, col=RegionName, pch=CountyName)) +
+  scale_color_manual(values=palette) +
+  scale_shape_manual(values=c(0, 1, 2)) +
+  geom_point(size=0.5) +
+  geom_smooth(method="lm") +
+  labs(title="Zillow Home Value Index (ZHVI) for 4-bedroom homes") +
+  theme_bw()
+
+ggplot(recentSales, aes(x=date, y=zhvi_index, col=RegionName, pch=CountyName)) +
+  facet_wrap(~ RegionName) +
+  scale_color_manual(values=palette) +
+  scale_shape_manual(values=c(0, 1, 2)) +
+  geom_smooth(method="lm") +
+  labs(title="Zillow Home Value Index (ZHVI) for 4-bedroom homes") +
+  theme_bw()
+```
+
+
+
+
