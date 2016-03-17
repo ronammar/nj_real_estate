@@ -89,6 +89,7 @@ ggplot(recentSales, aes(x=date, y=zhvi_index, col=RegionName, pch=CountyName)) +
   scale_shape_manual(values=c(0, 1, 2)) +
   geom_smooth(method="lm") +
   labs(title="Zillow Home Value Index (ZHVI) for 4-bedroom homes") +
+  guides(color=FALSE) +
   theme_bw()
 ```
 
